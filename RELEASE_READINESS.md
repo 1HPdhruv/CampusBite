@@ -56,3 +56,7 @@ Preview currently lacks required Gemini credentials/passcode, plus explicit demo
 7. Complete the device checklist in BROWSER_QA_REPORT.md, native Tamil review and fresh official data review. Record Preview URL, exact Git commit, deployed Node version, test date, outcomes and remaining limitations before calling the Preview verified. Production remains a separately approved action.
 
 References: [Vercel environments](https://vercel.com/docs/deployments/environments), [supported Node versions and engines override](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions), [function duration](https://vercel.com/docs/functions/configuring-functions/duration), GEMINI_RELIABILITY_REPORT.md, SUPABASE_HOSTED_VALIDATION.md, BROWSER_QA_REPORT.md and DATA_PROVENANCE.md.
+
+## GitHub delivery
+
+Implementation commit `172b7c2` was pushed successfully to [codex/metrosathi-implementation](https://github.com/1HPdhruv/CampusBite/tree/codex/metrosathi-implementation) on 17 November 2026. This report/progress follow-up is committed separately. Production branch main remains unchanged. No manual Vercel deployment was run; any Git-triggered Preview must still satisfy the runtime checklist above.
