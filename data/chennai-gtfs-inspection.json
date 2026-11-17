@@ -1,0 +1,23 @@
+{
+  "source_url": "https://github.com/ungalsoththu/ChennaiGTFS",
+  "source_commit": "af0742dba777f9657ed6fda2046d6c2a721d630b",
+  "sha256": "526deb1bcecbf6328b366a6de13f6cbd77fcb1af4a37d43a344bf49f15983f56",
+  "inspected_at": "2026-11-11",
+  "feed_date": "2026-10-04",
+  "counts": {
+    "stops": 254,
+    "routes": 28,
+    "calendar_rows": 1
+  },
+  "calendar_last_day": "20211231",
+  "warnings": [
+    "fares_excluded",
+    "timetables_excluded",
+    "not_runtime_verified",
+    "network_incomplete_yellow_line_not_established",
+    "calendar_expired_or_missing",
+    "dataset_rights_not_cleared"
+  ],
+  "runtime_eligible": false,
+  "dataset_license": "unknown"
+}

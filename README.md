@@ -1,120 +1,113 @@
-# CampusBite Live Build: Starter
+> Release checkpoint (2026-11-17): 57 tests, typecheck, optimized build and dependency audit pass. Ordinary Gemini text still fails upstream; staging has no Metro schema and remote SQL remains unexecuted at the user’s request. See [release readiness](RELEASE_READINESS.md), [Gemini reliability](GEMINI_RELIABILITY_REPORT.md), [hosted validation](SUPABASE_HOSTED_VALIDATION.md) and [browser QA](BROWSER_QA_REPORT.md) before deploying a Preview. Historical counts below describe earlier checkpoints.
 
-This is the plain hackathon starter, prepared for the CampusBite live session.
-In the session, the trainer turns it into CampusBite (an SRM canteen ordering agent) using AI prompts.
+# MetroSathi
 
-- Prompts, step by step: `live-demo/LIVE_BUILD_PROMPTS.md`
-- Demo script: `live-demo/DEMO_SCRIPT.md`
-- Database: run `seed/00_starter_example.sql`, then `seed/campusbite.sql` in Supabase
-- AI rules: `.github/copilot-instructions.md` (Copilot) and `CLAUDE.md` (Claude Code)
+Tamil and English voice + text help for Chennai Metro smart-card enquiries. **Independent hackathon prototype; not operated, endorsed or integrated with CMRL.** Every passenger, card, balance, transaction and recharge record is synthetic. Tickets stay in this prototype and are not submitted to CMRL.
 
----
+## Implemented
 
-# SRM Agentic AI Hackathon: Starter Template
+- Responsive navy/cyan dashboard, Tamil / English / Auto, editable voice captions, text chat, quick actions and record-check indicators.
+- Team passcode gate plus a separate signed, expiring HttpOnly demo passenger session. Three explicitly public synthetic profiles.
+- Gemini tool loop: passenger-scoped cards, balances, transactions, recharge status, station records, fares, official guidance, ticket listing and ticket drafting.
+- Browser speech recognition and speech synthesis (see [voice decision](docs/VOICE_DECISION.md)) in `ta-IN` / `en-IN`, stop controls, permission/errors, 45-second listening limit and text fallback. No automatic audio playback.
+- Opt-in Gemini Live with short-lived constrained credentials, server-authorized read tools, captions and interruption/capture cleanup.
+- Date-aware fare abstention, canonical station/line/stop/interchange validation, persisted language preference and speech pronunciation normalization.
+- Server-signed 10-minute ticket review, explicit confirmation, ownership checks and idempotent writes.
+- Process-local demo storage or explicit durable Supabase mode, additive SQL migration, source-backed fare subset and safe readiness endpoint.
+- Critical unit/security and rendered DOM interaction tests, isolated PostgreSQL-compatible SQL tests and local HTTP smoke script.
 
-This is the starting point for every team. It already has the setup done, so you can spend your time on your problem statement.
+**Not implemented:** production passenger authentication; real issuer/AFC/card/payment integration; full fare matrix/network/route planning; operational alerts. No payment, balance transfer, refund, actual card block or operator complaint tool exists. Native Tamil review and real-device speech testing remain required.
 
-**Stack:** Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase PostgreSQL · Google Gemini API (function calling) · Zod · Vercel
+## Run locally
 
-## What is already working
+Node 22.12+ (tested with Node 24), npm and a Gemini key with model access:
 
-- A passcode login that protects your app and your Gemini quota
-- A Supabase connection (server side only)
-- A Gemini agent loop with function calling: Gemini picks a tool, Zod checks the arguments, your code runs it, and the result goes back to Gemini
-- 3 example tools on a `tasks` table: `listTasks` (reads), `createTask` (writes) and `completeTask` (writes)
-- A chat screen that shows every tool the agent used
-- An example REST API (`/api/tasks`) and a live data list
-- Seed data for all 6 problem statements in `seed/`
-
-## Setup (about 30 minutes)
-
-1. **Create your team repo.** Click **Use this template** on GitHub and name it `team-<number>-ps<number>`.
-2. **Install.** Run `git clone <your repo>`, `cd` into it, and run `npm install`. You need Node.js 20 or later.
-3. **Create the database.** Create a project on [supabase.com](https://supabase.com). In **SQL Editor**, run `seed/00_starter_example.sql`, then the seed file for your problem.
-4. **Get the keys.**
-   - Supabase **Project Settings**: copy the Project URL and the secret (service_role) key
-   - [Google AI Studio](https://aistudio.google.com): click **Get API key**
-5. **Create `.env.local`.** Copy `.env.example` to `.env.local` and fill in all the values.
-6. **Run it.** Run `npm run dev`, open http://localhost:3000, enter your passcode and try a sample prompt.
-7. **Deploy.** On [vercel.com](https://vercel.com), import the repo, add the same environment variables, and deploy.
-
-To check your settings, open `/api/health`. It shows which variables are missing (never their values).
-
-## Folder guide
-
-```
-app/
-  page.tsx               Home page: agent chat + data list   <- change
-  login/page.tsx         Passcode page
-  api/agent/route.ts     POST /api/agent: runs the agent
-  api/tasks/route.ts     Example REST API                    <- copy for your tables
-  api/health/route.ts    Shows which settings are missing
-components/
-  AgentChat.tsx          Chat UI that shows tool calls       <- change the sample prompts
-  TaskList.tsx           Example data list                   <- replace with your data
-lib/
-  agent/tools.ts         THE AGENT TOOLS                     <- your main work
-  agent/systemPrompt.ts  Instructions for Gemini             <- rewrite for your problem
-  agent/runAgent.ts      The agent loop (max 5 rounds)
-  agent/defineTool.ts    Turns Zod schemas into Gemini tool declarations
-  supabase.ts            Server-side Supabase client
-  schemas.ts             Shared Zod schemas
-proxy.ts                 Passcode gate for every page and API
-seed/                    SQL seed data for each problem statement
+```sh
+npm ci
+cp .env.example .env.local  # only if you do not already have .env.local
+# Configure secret values locally. Do not paste them in chat.
+DEMO_MODE=true METRO_STORAGE=memory npm run dev
 ```
 
-## How to add a tool (the main hackathon work)
+Open http://localhost:3000, enter the existing team passcode, and select Kavya, Arun or Meena. Never overwrite an existing environment file. `.env.example` has variable names and explanations only. Without Gemini access the panels and support flow work, and chat gives a safe provider-unavailable response.
 
-Open `lib/agent/tools.ts` and copy this pattern:
+| Variable              | Purpose                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `APP_PASSCODE`        | Required strong team gate secret; also signs expiring gate, passenger and ticket tokens                   |
+| `GEMINI_API_KEY`      | Server-only permanent API key                                                                             |
+| `GEMINI_MODEL`        | Optional text model override; default `gemini-3.8-flash`, checked in Google model catalogue on 2026-11-11 |
+| `DEMO_MODE`           | Must equal `true` for synthetic passenger access; otherwise fail closed                                   |
+| `METRO_STORAGE`       | `memory` (default, no remote writes) or `supabase`                                                        |
+| `SUPABASE_URL`        | Existing server-only Supabase project URL; required in Supabase mode                                      |
+| `SUPABASE_SECRET_KEY` | Existing server-only service-role/secret key; required in Supabase mode                                   |
+| `GEMINI_LIVE_ENABLED` | Optional, `true` enables the separate Live button; default disabled                                       |
+| `GEMINI_LIVE_MODEL`   | Optional Live model override; default `gemini-3.8-live`                                                   |
 
-```ts
-const createReturnRequest = defineTool({
-  name: "createReturnRequest",
-  description: "Use this when the customer wants to return a product from a delivered order.",
-  writes: true,
-  schema: z.object({
-    order_id: z.number().int().describe("The order number, for example 1007"),
-    product_id: z.string().describe("The product id, for example P101"),
-    reason: z.string().min(3).describe("Why the customer is returning it"),
-  }),
-  run: async ({ order_id, product_id, reason }) => {
-    // 1. Check your business rule (for example the return window)
-    // 2. Read or write Supabase
-    // 3. Return a small, clean object, or throw new Error("clear message")
-  },
-});
+No `NEXT_PUBLIC_*` secrets are needed. The permanent Gemini key stays on the server; only a one-use 90-second credential reaches the Live client.
 
-export const tools: AgentTool[] = [createReturnRequest /*, more tools */];
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[Passenger dashboard / bilingual chat] --> Gate[Passcode + signed passenger cookie]
+  Voice[Browser recognition / editable captions] --> UI
+  Gate --> API[Validated same-origin server APIs]
+  API --> Agent[Gemini bounded tool loop]
+  Agent --> Tools[Passenger-scoped read tools / ticket draft]
+  Tools --> Data[Memory fixtures or server-only Supabase]
+  API --> Review[Signed ticket summary + explicit UI confirmation]
+  Review --> Data
+  Tools --> Sources[Checked CMRL source register]
+  UI --> Speech[User-triggered browser speech synthesis]
+  UI --> Mint[Authorized constrained Live token endpoint]
+  Mint --> Live[Optional browser Gemini Live / PCM / captions]
+  Live --> Bridge[Signed passenger-scoped read tool bridge]
+  Bridge --> Tools
 ```
 
-Good tools:
+## Database
 
-- Have a description that starts with "Use this when..."
-- Describe every field and its format, for example "YYYY-MM-DD"
-- Check business rules in code, not only in the prompt
-- Return small objects that Gemini can read easily
-- Throw clear errors, which the agent then explains to the user
+Remote SQL has **not** been applied. Review `supabase/migrations/202611110001_metrosathi.sql`, then `seed/metrosathi.sql` and optional additive `seed/20261111_station_reference.sql`. First validate locally with `npm test`; a PGlite test executes migration, seed twice, ownership constraints, RLS grants and ticket RPC in an isolated disposable database. It does not connect to Supabase.
 
-Then rewrite `lib/agent/systemPrompt.ts`. Name the business user, the logged-in user id (for example `C001`), your business rules and when to use each tool.
+Use the Supabase SQL editor only after explicit approval for the exact remote action. Apply the versioned migration once, then seed. Both scripts are additive; seed conflicts preserve existing rows. The migration is one-time (trigger creation is not intended to rerun); use migration tracking. No existing table is dropped or truncated. Prefixed public tables have RLS enabled, no browser policies, and no anon/authenticated grants. The RPC is executable only by service_role. See [seed guide](seed/README.md).
 
-## Rules to remember
+Set `METRO_STORAGE=supabase` only after migration/seed. DB failures never silently switch to memory. In `memory` mode tickets are temporary per server process and may differ across Vercel instances. Official reference tools use the checked, bundled register, with the same snapshot provided in SQL; changing SQL alone does not change the app's official reference content.
 
-- Never commit `.env.local`. It is already in `.gitignore`.
-- Never use `SUPABASE_SECRET_KEY` in frontend code. Only files under `lib/` and `app/api/` may use it.
-- Do not change the core stack.
-- Before you push, run `npm run build`. If it fails on your laptop, it will fail on Vercel too.
+## Text and voice
 
-## Seed files
+Chat history stays in page memory and is sent to Gemini only on submission. Tools never accept passenger identity from the browser/model. A signed draft token is sent separately to the UI and is not included in the model tool result. Only the confirmation API creates a ticket.
 
-| File | Problem |
-| --- | --- |
-| `00_starter_example.sql` | Example `tasks` table (run first) |
-| `demo_eventease.sql` | Day 1 lab: EventEase campus events |
-| `ps1_ecommerce_support.sql` | PS1 E-commerce Customer Support Agent |
-| `ps2_inventory_restock.sql` | PS2 Inventory Restock Agent |
-| `ps3_clinic_appointments.sql` | PS3 Clinic Appointment Agent |
-| `ps4_it_helpdesk.sql` | PS4 IT Helpdesk Ticket Agent |
-| `ps5_expense_claims.sql` | PS5 Expense Claim Assistant |
-| `ps6_job_match.sql` | PS6 Job Match Agent |
+The Web Speech browser adapter is in `lib/voice/browser.ts`. Speech first fills the editable text field, then the user sends it. Auto answers follow the current Tamil/Tanglish/English utterance; recognition in Auto uses the most recently inferred language (English initially), so select தமிழ் explicitly for a first Tamil voice query. Installed Tamil speech voices and recognition service support vary by device/browser. Use Chrome/Edge where Web Speech is supported; text remains available everywhere. The browser speech provider may process audio remotely; this app does not persist audio/transcripts. Submitted text is processed by Gemini under Google's service terms.
 
-All dates in the seed data are relative to today, so the data is always fresh. All names, companies and records are made up. You can run a seed file again at any time to reset your data.
+Live is enabled locally with `GEMINI_LIVE_ENABLED=true DEMO_MODE=true METRO_STORAGE=memory npm run dev`. It sends microphone audio directly to Google after an explicit click; no audio is persisted by the app. A separate signed capability binds every read tool call to the current server session. The Live model cannot create ticket drafts or tickets; use the existing support confirmation flow. Browser voice/text remain available after Live failure. See [voice decision and actual evidence](docs/VOICE_DECISION.md).
+
+## Selective open-source integration
+
+See [integration audit](OSS_INTEGRATION_AUDIT.md), [reuse/license report](OSS_REUSE_REPORT.md) and [data provenance](DATA_PROVENANCE.md). Two MIT patterns were adapted with notices: Live event organization and locale persistence. Other upstreams informed original data/evaluation methodology; no MPL source files or unclear-license datasets were copied. No new npm dependencies.
+
+The reference dataset covers seven named stations, Blue/Green corridor context and explicit Alandur/Central interchange memberships, not the full current network. Four directed fare pairs remain; freshness is checked per request with a local 30-day review policy. Unknown, expired, future and unsupported historical fares abstain. An offline Python importer inspects checksum-pinned GTFS, excludes fares/timetables and blocks unclear data rights. It does not promote data or write a database.
+
+## Verification
+
+```sh
+npm run typecheck
+npm test
+npm run build
+npm audit
+```
+
+HTTP smoke against an **isolated local test server**, with a deliberately disposable test passcode and Gemini disabled:
+
+```sh
+APP_PASSCODE=local-smoke-only DEMO_MODE=true METRO_STORAGE=memory GEMINI_API_KEY= npm start -- --hostname 127.0.0.1 --port 3210
+# Separate terminal:
+node scripts/smoke.mjs
+```
+
+Optional billable Live SDK/tool smoke (no microphone, no audio/transcript/credential output): start a second isolated server with `APP_PASSCODE=local-smoke-only DEMO_MODE=true METRO_STORAGE=memory GEMINI_LIVE_ENABLED=true npm start -- --hostname 127.0.0.1 --port 3211`, then run `node scripts/check-live.mjs` and `LIVE_SMOKE_LANGUAGE=ta-IN node scripts/check-live.mjs`. Preserve the configured Gemini key; never use this disposable passcode in a shared preview.
+
+The test suite includes original paired English/Tamil evidence checks and negative controls. These are deterministic regression gates, not a claimed LLM quality percentage or human Tamil evaluation.
+
+Do not use the smoke passcode for a shared preview. See [progress and actual results](CODEX_PROGRESS.md), [architecture](docs/ARCHITECTURE.md), [sources](docs/CMRL_DATA_SOURCES.md), [judge demo](docs/DEMO_SCRIPT.md), [security](docs/SECURITY_AND_LIMITATIONS.md), and [deployment checklist](docs/DEPLOYMENT_CHECKLIST.md).
+
+Historical starter SQL/docs are inactive under `archive/`; never run them for MetroSathi. No deployment has been performed.

@@ -9,7 +9,11 @@ let client: SupabaseClient | null = null;
  * Supabase needs only the base address, for example https://abcdxyz.supabase.co
  */
 function cleanSupabaseUrl(raw: string): string {
-  return raw.trim().replace(/\/+$/, "").replace(/\/rest\/v1$/i, "").replace(/\/+$/, "");
+  return raw
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/rest\/v1$/i, "")
+    .replace(/\/+$/, "");
 }
 
 /**
@@ -18,9 +22,13 @@ function cleanSupabaseUrl(raw: string): string {
  */
 export function getSupabase(): SupabaseClient {
   if (!client) {
-    client = createClient(cleanSupabaseUrl(requireEnv("SUPABASE_URL")), requireEnv("SUPABASE_SECRET_KEY"), {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    client = createClient(
+      cleanSupabaseUrl(requireEnv("SUPABASE_URL")),
+      requireEnv("SUPABASE_SECRET_KEY"),
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    );
   }
   return client;
 }

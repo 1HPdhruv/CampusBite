@@ -11,6 +11,7 @@ export type AgentTool = {
   name: string;
   description: string;
   schema: z.ZodObject;
+  resultSchema: z.ZodType;
   writes: boolean;
   run: (args: unknown) => Promise<unknown>;
 };
@@ -19,6 +20,7 @@ export function defineTool<S extends z.ZodObject>(tool: {
   name: string;
   description: string;
   schema: S;
+  resultSchema: z.ZodType;
   /** true if this tool inserts, updates or deletes data */
   writes?: boolean;
   run: (args: z.infer<S>) => Promise<unknown>;
@@ -27,8 +29,10 @@ export function defineTool<S extends z.ZodObject>(tool: {
     name: tool.name,
     description: tool.description,
     schema: tool.schema,
+    resultSchema: tool.resultSchema,
     writes: tool.writes ?? false,
-    run: (args) => tool.run(args as z.infer<S>),
+    run: async (args) =>
+      tool.resultSchema.parse(await tool.run(args as z.infer<S>)),
   };
 }
 
@@ -52,7 +56,10 @@ function clean(node: unknown): unknown {
     if (!ALLOWED_KEYS.has(key)) continue;
     if (key === "properties" && value && typeof value === "object") {
       out.properties = Object.fromEntries(
-        Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, clean(v)])
+        Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+          k,
+          clean(v),
+        ]),
       );
     } else if (key === "format" && value !== "date-time" && value !== "enum") {
       continue;
@@ -64,7 +71,9 @@ function clean(node: unknown): unknown {
 }
 
 /** Turns our tools into the function declarations Gemini expects. */
-export function toFunctionDeclarations(tools: AgentTool[]): FunctionDeclaration[] {
+export function toFunctionDeclarations(
+  tools: AgentTool[],
+): FunctionDeclaration[] {
   return tools.map((tool) => ({
     name: tool.name,
     description: tool.description,

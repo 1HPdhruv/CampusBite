@@ -1,36 +1,28 @@
-import { NextResponse } from "next/server";
+import { safeHealth } from "@/lib/metro/health";
 import { getSupabase } from "@/lib/supabase";
-
-export const runtime = "nodejs";
-
-/**
- * GET /api/health
- * Shows which settings are missing (never their values), which Supabase project
- * the app is connected to, and whether the tasks table can be read.
- */
 export async function GET() {
-  // GEMINI_MODEL is optional (it has a default), so it is not checked here.
-  const names = ["GEMINI_API_KEY", "SUPABASE_URL", "SUPABASE_SECRET_KEY", "APP_PASSCODE"];
-  const settings = Object.fromEntries(names.map((n) => [n, Boolean(process.env[n]?.trim())]));
-
-  // The project id is the first part of the Supabase URL. It is not a secret.
-  let supabaseProject: string | null = null;
-  try {
-    supabaseProject = new URL(process.env.SUPABASE_URL ?? "").hostname.split(".")[0] || null;
-  } catch {
-    supabaseProject = "SUPABASE_URL is not a valid URL";
-  }
-
-  let databaseCheck = "skipped (Supabase settings missing)";
-  if (settings.SUPABASE_URL && settings.SUPABASE_SECRET_KEY) {
-    const { error } = await getSupabase().from("tasks").select("id").limit(1);
-    databaseCheck = error ? `failed: ${error.message}` : "ok (tasks table found)";
-  }
-
-  return NextResponse.json({
-    ok: Object.values(settings).every(Boolean) && databaseCheck.startsWith("ok"),
-    settings,
-    supabaseProject,
-    databaseCheck,
-  });
+  const health = safeHealth(process.env);
+  let database = "not_used";
+  if (health.storage === "supabase")
+    try {
+      const { error } = await getSupabase()
+        .from("metro_passengers")
+        .select("id")
+        .limit(1)
+        .abortSignal(AbortSignal.timeout(3000));
+      database = error ? "unavailable" : "reachable";
+    } catch {
+      database = "unavailable";
+    }
+  return Response.json(
+    {
+      ...health,
+      database,
+      ready:
+        health.settings.APP_PASSCODE &&
+        health.demo_mode &&
+        (health.storage === "memory" || database === "reachable"),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

@@ -1,25 +1,58 @@
+import { dateSchema } from "./metro/fare-policy";
 import { z } from "zod";
-
-/** Shared Zod schemas. Add your own schemas for your problem statement here. */
-
-export const isoDate = z
+export const languageSchema = z.enum(["en-IN", "ta-IN", "auto"]);
+export const cardIdSchema = z.string().uuid();
+export const stationCodeSchema = z.string().regex(/^[A-Z][A-Z0-9_]{1,30}$/);
+export const referenceSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format")
-  .describe("Date in YYYY-MM-DD format");
-
-export const chatMessageSchema = z.object({
-  role: z.enum(["user", "model"]),
-  text: z.string().min(1).max(4000),
-});
-
-export const agentRequestSchema = z.object({
-  messages: z.array(chatMessageSchema).min(1).max(30),
-});
-
+  .trim()
+  .min(3)
+  .max(80)
+  .regex(/^[a-zA-Z0-9_-]+$/);
+export const chatMessageSchema = z
+  .object({
+    role: z.enum(["user", "model"]),
+    text: z.string().trim().min(1).max(4000),
+  })
+  .strict();
+export const agentRequestSchema = z
+  .object({
+    messages: z.array(chatMessageSchema).min(1).max(20),
+    language: languageSchema.default("auto"),
+  })
+  .strict()
+  .refine(
+    (v) => v.messages.at(-1)?.role === "user",
+    "Last message must be from user",
+  );
+export const transactionInputSchema = z
+  .object({
+    cardId: cardIdSchema.optional(),
+    limit: z.number().int().min(1).max(20).default(10),
+  })
+  .strict();
+export const fareInputSchema = z
+  .object({
+    from: stationCodeSchema,
+    to: stationCodeSchema,
+    asOf: dateSchema.optional(),
+  })
+  .strict();
+export const ticketDraftSchema = z
+  .object({
+    category: z.enum(["recharge", "card", "travel", "other"]),
+    description: z.string().trim().min(10).max(800),
+    cardId: cardIdSchema.optional(),
+    language: z.enum(["en-IN", "ta-IN"]),
+  })
+  .strict();
+export const ticketCreateSchema = z
+  .object({
+    confirmation: z.string().min(10).max(3000),
+    confirmed: z.literal(true),
+    idempotencyKey: z.string().uuid(),
+  })
+  .strict();
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
-
-// Example: schema for the starter "tasks" REST API
-export const createTaskSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  due_date: isoDate.optional(),
-});
+export type Language = z.infer<typeof languageSchema>;
+export type TicketDraft = z.infer<typeof ticketDraftSchema>;
