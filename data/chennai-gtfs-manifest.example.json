@@ -1,0 +1,12 @@
+{
+  "source_url": "https://github.com/ungalsoththu/ChennaiGTFS",
+  "source_path": "data/cmrl-gtfs.zip",
+  "source_commit": "af0742dba777f9657ed6fda2046d6c2a721d630b",
+  "feed_date": "2026-10-04",
+  "sha256": "REPLACE_WITH_LOCALLY_VERIFIED_ARCHIVE_SHA256",
+  "code_license": "MIT",
+  "dataset_license": "unknown",
+  "license_evidence_url": null,
+  "redistribution_approved": false,
+  "reviewed_by": null
+}

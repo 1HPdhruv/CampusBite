@@ -1,14 +1,16 @@
-/** One tool call made by the agent. Sent to the browser so the user can see what the agent did. */
-export type AgentStep = {
-  tool: string;
-  args: unknown;
-  ok: boolean;
-  writes: boolean;
-  result?: unknown;
-  error?: string;
+import type { TicketDraft } from "../schemas";
+export type AgentStep = { tool: string; ok: boolean };
+export type TicketProposal = {
+  draft: TicketDraft;
+  confirmation: string;
+  expires_in: number;
+  notice: string;
 };
-
 export type AgentResult = {
+  correlation_id?: string;
+  error_code?:
+    "AI_QUOTA" | "AI_TIMEOUT" | "AI_CONFIGURATION" | "AI_UNAVAILABLE";
   reply: string;
   steps: AgentStep[];
+  proposal?: TicketProposal;
 };

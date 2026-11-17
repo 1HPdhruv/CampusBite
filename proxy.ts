@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
   if (ok) return NextResponse.next();
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Not logged in" }, { status: 401 });
+    return NextResponse.json({ error: "SIGN_IN_REQUIRED" }, { status: 401 });
   }
   const url = request.nextUrl.clone();
   url.pathname = "/login";
@@ -18,5 +18,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|api/login|api/health|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!login|api/login|api/health|_next/static|_next/image|favicon.ico).*)",
+  ],
 };

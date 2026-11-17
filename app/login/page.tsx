@@ -1,51 +1,76 @@
 "use client";
-
 import { useState } from "react";
-
-export default function LoginPage() {
-  const [passcode, setPasscode] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
+import { strings } from "@/lib/i18n";
+export default function Login() {
+  const [language, setLanguage] = useState<"en-IN" | "ta-IN">("en-IN"),
+    [passcode, setPasscode] = useState(""),
+    [error, setError] = useState(false),
+    [busy, setBusy] = useState(false);
+  const t = strings[language];
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode }),
-    });
-    setLoading(false);
-    if (res.ok) {
+    setBusy(true);
+    setError(false);
+    try {
+      const r = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode }),
+      });
+      if (!r.ok) throw new Error();
       window.location.href = "/";
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Login failed");
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
     }
   }
-
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-lg font-semibold">Enter team passcode</h1>
-        <p className="mt-1 text-sm text-slate-500">This keeps your app and your Gemini quota safe.</p>
+    <main className="login-shell" lang={language}>
+      <form className="panel login-panel" onSubmit={submit}>
+        <div className="row">
+          <span className="brand">
+            <span className="brand-mark">
+              M<span />
+            </span>
+            MetroSathi
+          </span>
+          <button
+            type="button"
+            className="text-button"
+            onClick={() =>
+              setLanguage(language === "en-IN" ? "ta-IN" : "en-IN")
+            }
+          >
+            {language === "en-IN" ? "தமிழ்" : "English"}
+          </button>
+        </div>
+        <span className="eyebrow">YOUR METRO COMPANION / சென்னை</span>
+        <h1>{t.brand}</h1>
+        <p className="muted">{t.gateHint}</p>
+        <label htmlFor="passcode">{t.passcode}</label>
         <input
+          id="passcode"
+          autoComplete="current-password"
           type="password"
+          maxLength={200}
+          required
           value={passcode}
           onChange={(e) => setPasscode(e.target.value)}
-          className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-slate-500"
-          placeholder="Passcode"
-          autoFocus
         />
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading || !passcode}
-          className="mt-4 w-full rounded-lg bg-slate-900 px-3 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Checking..." : "Enter"}
+        {error && (
+          <p className="error" role="alert">
+            {t.wrong}
+          </p>
+        )}
+        <button className="primary" disabled={busy || !passcode}>
+          {busy ? t.checking : t.back} →
         </button>
+        <small>
+          {t.disclaimer}
+          <br />
+          {t.simulated}
+        </small>
       </form>
     </main>
   );

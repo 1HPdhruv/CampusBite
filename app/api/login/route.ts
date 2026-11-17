@@ -1,25 +1,29 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { SESSION_COOKIE, hashPasscode } from "@/lib/auth";
-
-const loginSchema = z.object({ passcode: z.string().min(1).max(100) });
-
+import { SESSION_COOKIE, signValue, cookieOptions } from "@/lib/auth";
+import {
+  assertOrigin,
+  rateLimit,
+  readJson,
+  api,
+  ApiError,
+} from "@/lib/metro/security";
+const schema = z.object({ passcode: z.string().min(1).max(200) }).strict();
 export async function POST(request: Request) {
-  const expected = process.env.APP_PASSCODE?.trim();
-  if (!expected) {
-    return NextResponse.json({ error: "APP_PASSCODE is not set on the server." }, { status: 500 });
-  }
-  const parsed = loginSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success || parsed.data.passcode.trim() !== expected) {
-    return NextResponse.json({ error: "Wrong passcode." }, { status: 401 });
-  }
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, await hashPasscode(expected), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 12,
+  return api(async () => {
+    assertOrigin(request);
+    rateLimit("login-global", 20);
+    const expected = process.env.APP_PASSCODE?.trim();
+    if (!expected) throw new ApiError("AUTH_NOT_CONFIGURED", 503);
+    const p = schema.safeParse(await readJson(request));
+    if (!p.success || p.data.passcode.trim() !== expected)
+      throw new ApiError("INVALID_PASSCODE", 401);
+    const response = NextResponse.json({ ok: true });
+    response.cookies.set(
+      SESSION_COOKIE,
+      await signValue("gate", true),
+      cookieOptions,
+    );
+    return response;
   });
-  return response;
 }

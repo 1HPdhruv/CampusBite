@@ -18,3 +18,10 @@ next-env.d.ts
 # misc
 .DS_Store
 npm-debug.log*
+
+# Python importer/test bytecode
+__pycache__/
+*.py[cod]
+
+# Supabase CLI local cache
+supabase/.temp/
